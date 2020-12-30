@@ -4,10 +4,10 @@ Codes for our paper "CAP: Compcat Search for Automatic Filter Pruning", which ef
 
 ## Prerequisites
 
-- PyTorch 1.7+
-- [Apex](https://github.com/NVIDIA/apex) (for distributed running)
-- [DALI](https://github.com/NVIDIA/DALI) (for accelerating data processing)
-- [torchprofile](https://github.com/zhijian-liu/torchprofile) (for FLOPs calculation, which is based on `torch.jit.trace`, more general and accurate)
+* PyTorch 1.7+
+* [Apex](https://github.com/NVIDIA/apex) (for distributed running)
+* [DALI](https://github.com/NVIDIA/DALI) (for accelerating data processing)
+* [torchprofile](https://github.com/zhijian-liu/torchprofile) (for FLOPs calculation, which is based on `torch.jit.trace`, more general and accurate)
 
 ## Usage
 
@@ -17,13 +17,13 @@ Then you can easily run our codes with the following scripts
 
 **Evaluation**
 
-```bash
+``` bash
 bash ./run_scripts/evaluate/evaluate_mobilenet_50m.sh
 ```
 
 or
 
-```python
+``` python
 python3 -m torch.distributed.launch --nproc_per_node=1 evaluate.py \
  --model "mobilenet" \
  --path "Exp_search/search_mobilenet_50m" \
@@ -34,13 +34,13 @@ python3 -m torch.distributed.launch --nproc_per_node=1 evaluate.py \
 
 **Train**
 
-```bash
+``` bash
 bash ./run_scripts/train/train_mobilenet_50m.sh
 ```
 
 or
 
-```python
+``` python
 # [optional]cache imagenet dataset in RAM for accelerting I/O
 chmod +x /userhome/code/CAP/prep_imagenet.sh
 cd /userhome/code/CAP
@@ -63,13 +63,13 @@ python3 -m torch.distributed.launch --nproc_per_node=4 train.py --train \
 
 **Search**
 
-```bash
+``` bash
 bash ./run_scripts/train/search_mobilenet_50m.sh
 ```
 
 or
 
-```python
+``` python
 # [optional]cache imagenet dataset in RAM for accelerting I/O
 chmod +x /userhome/code/CAP/prep_imagenet.sh
 cd /userhome/code/CAP
@@ -97,6 +97,3 @@ python3 -m torch.distributed.launch --nproc_per_node=4 search.py --train \
  --manual_seed ${RANDOM}
 
 ```
-
-
-

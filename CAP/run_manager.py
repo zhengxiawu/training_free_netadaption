@@ -403,8 +403,7 @@ class RunManager:
         # noinspection PyUnresolvedReferences
         with torch.no_grad():
             for i, data in enumerate(data_loader):
-                images, labels = data[0].cuda(
-                    non_blocking=True), data[1].cuda(non_blocking=True)
+                images, labels = data[0].cuda(non_blocking=True), data[1].cuda(non_blocking=True)
                 # images, labels = data[0].cuda(), data[1].cuda()
                 # compute output
                 output = net(images)

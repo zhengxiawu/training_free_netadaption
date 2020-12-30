@@ -11,12 +11,13 @@ parser = argparse.ArgumentParser()
 
 """ model config """
 parser.add_argument('--path', type=str)
-parser.add_argument('--model', type=str, default="vgg", \
-                               choices=['vgg', 'resnet56', 'resnet110', 'resnet18', 'resnet34', 'resnet50', 'mobilenetv2', 'mobilenet'])
+parser.add_argument('--model', type=str, default="vgg",
+                    choices=['vgg', 'resnet56', 'resnet110', 'resnet18', 'resnet34', 'resnet50', 'mobilenetv2', 'mobilenet'])
 parser.add_argument('--cfg', type=str, default="None")
 
 """ dataset config """
-parser.add_argument('--dataset', type=str, default='cifar10', choices=['cifar10', 'imagenet'])
+parser.add_argument('--dataset', type=str, default='cifar10',
+                    choices=['cifar10', 'imagenet'])
 parser.add_argument('--save_path', type=str, default='/userhome/data/cifar10')
 
 """ runtime config """
@@ -44,30 +45,38 @@ if __name__ == '__main__':
         for k, v in args.__dict__.items():
             print('\t%s: %s' % (k, v))
 
-    if args.model=="vgg":
-        assert args.dataset=='cifar10', 'vgg only supports cifar10 dataset'
-        net = VGG_CIFAR(num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
-    elif args.model=="resnet56":
-        assert args.dataset=='cifar10', 'resnet56 only supports cifar10 dataset'
-        net = ResNet_CIFAR(depth=56, num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
-    elif args.model=="resnet110":
-        assert args.dataset=='cifar10', 'resnet56 only supports cifar10 dataset'
-        net = ResNet_CIFAR(depth=110, num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
-    elif args.model=="resnet18":
-        assert args.dataset=='imagenet', 'resnet18 only supports imagenet dataset'
-        net = ResNet_ImageNet(depth=18, num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
-    elif args.model=="resnet34":
-        assert args.dataset=='imagenet', 'resnet34 only supports imagenet dataset'
-        net = ResNet_ImageNet(depth=34, num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
-    elif args.model=="resnet50":
-        assert args.dataset=='imagenet', 'resnet50 only supports imagenet dataset'
-        net = ResNet_ImageNet(depth=50, num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
-    elif args.model=="mobilenetv2":
-        assert args.dataset=='imagenet', 'mobilenetv2 only supports imagenet dataset'
-        net = MobileNetV2(num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
-    elif args.model=="mobilenet":
-        assert args.dataset=='imagenet', 'mobilenet only supports imagenet dataset'
-        net = MobileNet(num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
+    if args.model == "vgg":
+        assert args.dataset == 'cifar10', 'vgg only supports cifar10 dataset'
+        net = VGG_CIFAR(
+            num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
+    elif args.model == "resnet56":
+        assert args.dataset == 'cifar10', 'resnet56 only supports cifar10 dataset'
+        net = ResNet_CIFAR(
+            depth=56, num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
+    elif args.model == "resnet110":
+        assert args.dataset == 'cifar10', 'resnet56 only supports cifar10 dataset'
+        net = ResNet_CIFAR(
+            depth=110, num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
+    elif args.model == "resnet18":
+        assert args.dataset == 'imagenet', 'resnet18 only supports imagenet dataset'
+        net = ResNet_ImageNet(
+            depth=18, num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
+    elif args.model == "resnet34":
+        assert args.dataset == 'imagenet', 'resnet34 only supports imagenet dataset'
+        net = ResNet_ImageNet(
+            depth=34, num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
+    elif args.model == "resnet50":
+        assert args.dataset == 'imagenet', 'resnet50 only supports imagenet dataset'
+        net = ResNet_ImageNet(
+            depth=50, num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
+    elif args.model == "mobilenetv2":
+        assert args.dataset == 'imagenet', 'mobilenetv2 only supports imagenet dataset'
+        net = MobileNetV2(
+            num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
+    elif args.model == "mobilenet":
+        assert args.dataset == 'imagenet', 'mobilenet only supports imagenet dataset'
+        net = MobileNet(
+            num_classes=run_config.data_provider.n_classes, cfg=eval(args.cfg))
 
     # build run manager
     run_manager = RunManager(args.path, net, run_config)

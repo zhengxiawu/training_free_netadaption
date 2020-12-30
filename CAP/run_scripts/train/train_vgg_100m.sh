@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-python3 -m torch.distributed.launch --nproc_per_node=2 train.py --train \
+python3 -m torch.distributed.launch --nproc_per_node=1 train.py --train \
  --model "vgg" \
  --cfg "[20, 34, 94, 90, 174, 128, 186, 338, 190, 286, 150, 198, 266]" \
  --path "Exp_train/train_vgg_100m" \

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-python3 -m torch.distributed.launch --nproc_per_node=1 --master_port=() train.py --train \
+python3 -m torch.distributed.launch --nproc_per_node=1 --master_port=2345 train.py --train \
  --model "vgg" \
  --path "Exp_base/vgg_base_${RANDOM}" \
  --dataset "cifar10" \

@@ -14,6 +14,7 @@ IMAGENET_IMAGES_NUM_TEST = 50000
 CIFAR_IMAGES_NUM_TRAIN = 50000
 CIFAR_IMAGES_NUM_TEST = 10000
 
+
 class Cutout(object):
     def __init__(self, length):
         self.length = length
@@ -82,10 +83,12 @@ class DALIDataloader(DALIGenericIterator):
         self.batch_size = batch_size
         self.onehot_label = onehot_label
         self.output_map = output_map
-        if dataset!='cifar10':
-            super().__init__(pipelines=pipeline, reader_name="Reader", fill_last_batch=False, output_map=output_map)
+        if dataset != 'cifar10':
+            super().__init__(pipelines=pipeline, reader_name="Reader",
+                             fill_last_batch=False, output_map=output_map)
         else:
-            super().__init__(pipelines=pipeline, size=size, auto_reset=auto_reset, output_map=output_map, fill_last_batch=True, last_batch_padded=False)
+            super().__init__(pipelines=pipeline, size=size, auto_reset=auto_reset,
+                             output_map=output_map, fill_last_batch=True, last_batch_padded=False)
 
     def __next__(self):
         if self._first_batch is not None:
@@ -97,22 +100,26 @@ class DALIDataloader(DALIGenericIterator):
             return [data[self.output_map[0]], data[self.output_map[1]].squeeze().long()]
         else:
             return [data[self.output_map[0]], data[self.output_map[1]]]
-    
+
     def __len__(self):
-        if self._size_all%self.batch_size==0:
+        if self._size_all % self.batch_size == 0:
             return self._size_all//self.batch_size
         else:
             return self._size_all//self.batch_size+1
 
+
 class HybridTrainPipe(Pipeline):
     def __init__(self, batch_size, num_threads, device_id, data_dir, crop, dali_cpu=False, local_rank=0, world_size=1):
-        super(HybridTrainPipe, self).__init__(batch_size, num_threads, device_id, seed=12 + device_id)
-        self.input = ops.FileReader(file_root=data_dir, shard_id=local_rank, num_shards=world_size, random_shuffle=True, pad_last_batch=True)
+        super(HybridTrainPipe, self).__init__(batch_size,
+                                              num_threads, device_id, seed=12 + device_id)
+        self.input = ops.FileReader(file_root=data_dir, shard_id=local_rank,
+                                    num_shards=world_size, random_shuffle=True, pad_last_batch=True)
         # let user decide which pipeline works him bets for RN version he runs
         if dali_cpu:
             dali_device = "cpu"
             self.decode = ops.HostDecoderRandomCrop(device=dali_device, output_type=types.RGB,
-                                                    random_aspect_ratio=[0.8, 1.25],
+                                                    random_aspect_ratio=[
+                                                        0.8, 1.25],
                                                     random_area=[0.1, 1.0],
                                                     num_attempts=100)
         else:
@@ -120,11 +127,13 @@ class HybridTrainPipe(Pipeline):
             # This padding sets the size of the internal nvJPEG buffers to be able to handle all images from full-sized ImageNet
             # without additional reallocations
             self.decode = ops.ImageDecoderRandomCrop(device="mixed", output_type=types.RGB,
-                                                      device_memory_padding=211025920, host_memory_padding=140544512,
-                                                      random_aspect_ratio=[0.8, 1.25],
-                                                      random_area=[0.1, 1.0],
-                                                      num_attempts=100)
-        self.res = ops.Resize(device=dali_device, resize_x=crop, resize_y=crop, interp_type=types.INTERP_TRIANGULAR)
+                                                     device_memory_padding=211025920, host_memory_padding=140544512,
+                                                     random_aspect_ratio=[
+                                                         0.8, 1.25],
+                                                     random_area=[0.1, 1.0],
+                                                     num_attempts=100)
+        self.res = ops.Resize(device=dali_device, resize_x=crop,
+                              resize_y=crop, interp_type=types.INTERP_TRIANGULAR)
         self.cmnp = ops.CropMirrorNormalize(device="gpu",
                                             dtype=types.FLOAT,
                                             output_layout=types.NCHW,
@@ -145,11 +154,13 @@ class HybridTrainPipe(Pipeline):
 
 class HybridValPipe(Pipeline):
     def __init__(self, batch_size, num_threads, device_id, data_dir, crop, size, local_rank=0, world_size=1):
-        super(HybridValPipe, self).__init__(batch_size, num_threads, device_id, seed=12 + device_id)
+        super(HybridValPipe, self).__init__(batch_size,
+                                            num_threads, device_id, seed=12 + device_id)
         self.input = ops.FileReader(file_root=data_dir, shard_id=local_rank, num_shards=world_size,
                                     random_shuffle=False)
         self.decode = ops.ImageDecoder(device="mixed", output_type=types.RGB)
-        self.res = ops.Resize(device="gpu", resize_shorter=size, interp_type=types.INTERP_TRIANGULAR)
+        self.res = ops.Resize(device="gpu", resize_shorter=size,
+                              interp_type=types.INTERP_TRIANGULAR)
         self.cmnp = ops.CropMirrorNormalize(device="gpu",
                                             dtype=types.FLOAT,
                                             output_layout=types.NCHW,
@@ -166,26 +177,30 @@ class HybridValPipe(Pipeline):
 
 
 def get_imagenet_iter(data_type, image_dir, batch_size, num_threads, device_id, num_gpus, crop, val_size=256, world_size=1,
-                  local_rank=0):
+                      local_rank=0):
     if data_type == 'train':
         pip_train = HybridTrainPipe(batch_size=batch_size, num_threads=num_threads, device_id=local_rank,
                                     data_dir=image_dir, crop=crop, world_size=world_size, local_rank=local_rank)
         pip_train.build()
-        dali_iter_train = DALIDataloader(pipeline=pip_train, size=IMAGENET_IMAGES_NUM_TRAIN // world_size, batch_size=batch_size, onehot_label=True)
+        dali_iter_train = DALIDataloader(
+            pipeline=pip_train, size=IMAGENET_IMAGES_NUM_TRAIN // world_size, batch_size=batch_size, onehot_label=True)
         return dali_iter_train
     elif data_type == 'val':
         pip_val = HybridValPipe(batch_size=batch_size, num_threads=num_threads, device_id=local_rank,
                                 data_dir=image_dir, crop=crop, size=val_size, world_size=world_size, local_rank=local_rank)
         pip_val.build()
-        dali_iter_val = DALIDataloader(pipeline=pip_val, size=IMAGENET_IMAGES_NUM_TEST // world_size, batch_size=batch_size, onehot_label=True)
+        dali_iter_val = DALIDataloader(
+            pipeline=pip_val, size=IMAGENET_IMAGES_NUM_TEST // world_size, batch_size=batch_size, onehot_label=True)
         return dali_iter_val
 
 
 class HybridTrainPipe_CIFAR(Pipeline):
     def __init__(self, batch_size, num_threads, device_id, data_dir, crop, dali_cpu=False, local_rank=0, world_size=1,
                  cutout=0):
-        super(HybridTrainPipe_CIFAR, self).__init__(batch_size, num_threads, device_id, seed=12 + device_id)
-        self.iterator = iter(CIFAR_INPUT_ITER(batch_size, 'train', root=data_dir))
+        super(HybridTrainPipe_CIFAR, self).__init__(
+            batch_size, num_threads, device_id, seed=12 + device_id)
+        self.iterator = iter(CIFAR_INPUT_ITER(
+            batch_size, 'train', root=data_dir))
         dali_device = "gpu"
         self.input = ops.ExternalSource()
         self.input_label = ops.ExternalSource()
@@ -211,7 +226,8 @@ class HybridTrainPipe_CIFAR(Pipeline):
         self.labels = self.input_label()
         output = self.jpegs
         output = self.pad(output.gpu())
-        output = self.crop(output, crop_pos_x=self.uniform(), crop_pos_y=self.uniform())
+        output = self.crop(output, crop_pos_x=self.uniform(),
+                           crop_pos_y=self.uniform())
         output = self.flip(output, horizontal=rng)
         output = self.cmnp(output)
         return [output, self.labels]
@@ -219,8 +235,10 @@ class HybridTrainPipe_CIFAR(Pipeline):
 
 class HybridValPipe_CIFAR(Pipeline):
     def __init__(self, batch_size, num_threads, device_id, data_dir, crop, size, local_rank=0, world_size=1):
-        super(HybridValPipe_CIFAR, self).__init__(batch_size, num_threads, device_id, seed=12 + device_id)
-        self.iterator = iter(CIFAR_INPUT_ITER(batch_size, 'val', root=data_dir))
+        super(HybridValPipe_CIFAR, self).__init__(
+            batch_size, num_threads, device_id, seed=12 + device_id)
+        self.iterator = iter(CIFAR_INPUT_ITER(
+            batch_size, 'val', root=data_dir))
         self.input = ops.ExternalSource()
         self.input_label = ops.ExternalSource()
         self.pad = ops.Paste(device="gpu", ratio=1., fill_value=0)
@@ -242,7 +260,7 @@ class HybridValPipe_CIFAR(Pipeline):
     def define_graph(self):
         self.jpegs = self.input(name="Reader")
         self.labels = self.input_label()
-        rng = self.coin()
+        # rng = self.coin()
         output = self.jpegs
         output = self.pad(output.gpu())
         output = self.cmnp(output.gpu())
@@ -303,7 +321,8 @@ class CIFAR_INPUT_ITER():
         labels = []
         for _ in range(self.batch_size):
             if self.train and self.i % self.n == 0:
-                self.data, self.targets = shuffle(self.data, self.targets, random_state=0)
+                self.data, self.targets = shuffle(
+                    self.data, self.targets, random_state=0)
             img, label = self.data[self.i], self.targets[self.i]
             batch.append(img)
             labels.append(label)

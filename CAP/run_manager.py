@@ -17,6 +17,7 @@ from apex.parallel import DistributedDataParallel as DDP
 from utils import count_parameters, AverageMeter, get_unpruned_weights, accuracy, cross_entropy_with_label_smoothing
 # from apex import amp, optimizers
 
+
 class RunConfig:
     def __init__(self, n_epochs, init_lr, lr_schedule_type, lr_schedule_param,
                  dataset, train_batch_size, test_batch_size,
@@ -71,14 +72,16 @@ class RunConfig:
             if T_cur < T_warm:
                 lr = T_cur / T_warm * self.init_lr
             else:
-                lr = 0.5 * self.init_lr * (1 + math.cos(math.pi * (T_cur - T_warm) / (T_total - T_warm)))
+                lr = 0.5 * self.init_lr * \
+                    (1 + math.cos(math.pi * (T_cur - T_warm) / (T_total - T_warm)))
         else:
             raise ValueError('do not support: %s' % self.lr_schedule_type)
         return lr
 
     def adjust_learning_rate(self, optimizer, epoch, batch=0, nBatch=None):
         """ adjust learning of a given optimizer and return the new learning rate """
-        new_lr = self._calc_learning_rate(epoch, batch, nBatch, self.warm_epoch)
+        new_lr = self._calc_learning_rate(
+            epoch, batch, nBatch, self.warm_epoch)
         for param_group in optimizer.param_groups:
             param_group['lr'] = new_lr
         return new_lr
@@ -123,10 +126,12 @@ class RunConfig:
     def build_optimizer(self, net_params):
         if self.opt_type == 'sgd':
             opt_param = {} if self.opt_param is None else self.opt_param
-            momentum, nesterov = opt_param.get('momentum', 0.9), opt_param.get('nesterov', True)
+            momentum, nesterov = opt_param.get(
+                'momentum', 0.9), opt_param.get('nesterov', True)
             if self.no_decay_keys:
                 optimizer = torch.optim.SGD([
-                    {'params': net_params[0], 'weight_decay': self.weight_decay},
+                    {'params': net_params[0],
+                        'weight_decay': self.weight_decay},
                     {'params': net_params[1], 'weight_decay': 0},
                 ], lr=self.init_lr, momentum=momentum, nesterov=nesterov)
             else:
@@ -162,18 +167,20 @@ class RunManager:
             self.net = apex.parallel.convert_syncbn_model(self.net)
         print('local_rank: %d' % self.run_config.local_rank)
 
-
         self.run_config.init_lr = self.run_config.init_lr * float(
             self.run_config.train_batch_size * self.run_config.world_size) / 256.
         self.criterion = nn.CrossEntropyLoss()
         if self.run_config.no_decay_keys:
             keys = self.run_config.no_decay_keys.split('#')
             self.optimizer = self.run_config.build_optimizer([
-                self.net.get_parameters(keys, mode='exclude'),  # parameters with weight decay
-                self.net.get_parameters(keys, mode='include'),  # parameters without weight decay
+                # parameters with weight decay
+                self.net.get_parameters(keys, mode='exclude'),
+                # parameters without weight decay
+                self.net.get_parameters(keys, mode='include'),
             ])
         else:
-            self.optimizer = self.run_config.build_optimizer(self.net.weight_parameters())
+            self.optimizer = self.run_config.build_optimizer(
+                self.net.weight_parameters())
         # self.net, self.optimizer = amp.initialize(self.net, self.optimizer, opt_level='O1')
         self.net = DDP(self.net, delay_allreduce=True)
         cudnn.benchmark = True
@@ -197,14 +204,16 @@ class RunManager:
         return self._logs_path
 
     """ net info """
+
     def reset_model(self, model, model_origin=None):
         self.net = model
-        self.net.init_model(self.run_config.model_init, self.run_config.init_div_groups)
-        if model_origin!=None:
-            if self.run_config.local_rank==0:
+        self.net.init_model(self.run_config.model_init,
+                            self.run_config.init_div_groups)
+        if model_origin is not None:
+            if self.run_config.local_rank == 0:
                 print('-'*30+' start pruning '+'-'*30)
             get_unpruned_weights(self.net, model_origin)
-            if self.run_config.local_rank==0:
+            if self.run_config.local_rank == 0:
                 print('-'*30+' end pruning '+'-'*30)
         # net info
         self.net = self.net.cuda()
@@ -219,11 +228,14 @@ class RunManager:
         if self.run_config.no_decay_keys:
             keys = self.run_config.no_decay_keys.split('#')
             self.optimizer = self.run_config.build_optimizer([
-                self.net.get_parameters(keys, mode='exclude'),  # parameters with weight decay
-                self.net.get_parameters(keys, mode='include'),  # parameters without weight decay
+                # parameters with weight decay
+                self.net.get_parameters(keys, mode='exclude'),
+                # parameters without weight decay
+                self.net.get_parameters(keys, mode='include'),
             ])
         else:
-            self.optimizer = self.run_config.build_optimizer(self.net.weight_parameters())
+            self.optimizer = self.run_config.build_optimizer(
+                self.net.weight_parameters())
         # model, self.optimizer = amp.initialize(model, self.optimizer,
         #                                        opt_level='O2',
         #                                        keep_batchnorm_fp32=True,
@@ -272,6 +284,7 @@ class RunManager:
             fout.write(json.dumps(net_info, indent=4) + '\n')
 
     """ save and load models """
+
     def save_model(self, checkpoint=None, is_best=False, model_name=None):
         if checkpoint is None:
             checkpoint = {'state_dict': self.net.module.state_dict()}
@@ -279,7 +292,8 @@ class RunManager:
         if model_name is None:
             model_name = 'checkpoint.pth.tar'
 
-        checkpoint['dataset'] = self.run_config.dataset  # add `dataset` info to the checkpoint
+        # add `dataset` info to the checkpoint
+        checkpoint['dataset'] = self.run_config.dataset
         latest_fname = os.path.join(self.save_path, 'latest.txt')
         model_path = os.path.join(self.save_path, model_name)
         with open(latest_fname, 'w') as fout:
@@ -389,7 +403,8 @@ class RunManager:
         # noinspection PyUnresolvedReferences
         with torch.no_grad():
             for i, data in enumerate(data_loader):
-                images, labels = data[0].cuda(non_blocking=True), data[1].cuda(non_blocking=True)
+                images, labels = data[0].cuda(
+                    non_blocking=True), data[1].cuda(non_blocking=True)
                 # images, labels = data[0].cuda(), data[1].cuda()
                 # compute output
                 output = net(images)
@@ -415,9 +430,11 @@ class RunManager:
                                         'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t' \
                                         'Loss {loss.val:.4f} ({loss.avg:.4f})\t' \
                                         'Top-1 acc {top1.val:.3f} ({top1.avg:.3f})'. \
-                        format(i, len(data_loader) - 1, batch_time=batch_time, loss=losses, top1=top1)
+                        format(i, len(data_loader) - 1,
+                               batch_time=batch_time, loss=losses, top1=top1)
                     if return_top5:
-                        test_log += '\tTop-5 acc {top5.val:.3f} ({top5.avg:.3f})'.format(top5=top5)
+                        test_log += '\tTop-5 acc {top5.val:.3f} ({top5.avg:.3f})'.format(
+                            top5=top5)
                     print(test_log)
         self.run_config.valid_loader.reset()
         self.run_config.test_loader.reset()
@@ -436,7 +453,8 @@ class RunManager:
         self.net.train()
         for i in range(epochs):
             for _, data in enumerate(self.run_config.train_loader):
-                images, labels = data[0].cuda(non_blocking=True), data[1].cuda(non_blocking=True)
+                images, labels = data[0].cuda(
+                    non_blocking=True), data[1].cuda(non_blocking=True)
                 output = self.net(images)
                 del output, images, labels
         if self.run_config.local_rank == 0:
@@ -456,11 +474,13 @@ class RunManager:
         for i, data in enumerate(self.run_config.train_loader):
             data_time.update(time.time() - end)
             new_lr = adjust_lr_func(i)
-            images, labels = data[0].cuda(non_blocking=True), data[1].cuda(non_blocking=True)
+            images, labels = data[0].cuda(
+                non_blocking=True), data[1].cuda(non_blocking=True)
             # compute output
             output = self.net(images)
             if self.run_config.label_smoothing > 0:
-                loss = cross_entropy_with_label_smoothing(output, labels, self.run_config.label_smoothing)
+                loss = cross_entropy_with_label_smoothing(
+                    output, labels, self.run_config.label_smoothing)
             else:
                 loss = self.criterion(output, labels)
 
@@ -483,7 +503,8 @@ class RunManager:
             end = time.time()
 
             if (i % self.run_config.print_frequency == 0 or i + 1 == len(self.run_config.train_loader)) and self.run_config.local_rank == 0:
-                batch_log = train_log_func(i, batch_time, data_time, losses, top1, top5, new_lr)
+                batch_log = train_log_func(
+                    i, batch_time, data_time, losses, top1, top5, new_lr)
                 self.write_log(batch_log, 'train')
         return top1, top5
 
@@ -497,39 +518,47 @@ class RunManager:
                 format(epoch_ + 1, i, len(self.run_config.train_loader) - 1,
                        batch_time=batch_time, data_time=data_time, losses=losses, top1=top1)
             if print_top5:
-                batch_log += '\tTop-5 acc {top5.val:.3f} ({top5.avg:.3f})'.format(top5=top5)
+                batch_log += '\tTop-5 acc {top5.val:.3f} ({top5.avg:.3f})'.format(
+                    top5=top5)
             batch_log += '\tlr {lr:.5f}'.format(lr=lr)
             return batch_log
 
         for epoch in range(self.start_epoch, self.run_config.n_epochs):
             if self.run_config.local_rank == 0:
-                print('\n', '-' * 30, 'Train epoch: %d' % (epoch + 1), '-' * 30, '\n')
+                print('\n', '-' * 30, 'Train epoch: %d' %
+                      (epoch + 1), '-' * 30, '\n')
 
             end = time.time()
             train_top1, train_top5 = self.train_one_epoch(
-                lambda i: self.run_config.adjust_learning_rate(self.optimizer, epoch, i, len(self.run_config.train_loader)),
+                lambda i: self.run_config.adjust_learning_rate(
+                    self.optimizer, epoch, i, len(self.run_config.train_loader)),
                 lambda i, batch_time, data_time, losses, top1, top5, new_lr:
-                train_log_func(epoch, i, batch_time, data_time, losses, top1, top5, new_lr),
+                train_log_func(epoch, i, batch_time, data_time,
+                               losses, top1, top5, new_lr),
                 epoch
             )
             time_per_epoch = time.time() - end
-            seconds_left = int((self.run_config.n_epochs - epoch - 1) * time_per_epoch)
+            seconds_left = int(
+                (self.run_config.n_epochs - epoch - 1) * time_per_epoch)
             if self.run_config.local_rank == 0:
                 print('Time per epoch: %s, Est. complete in: %s' % (
                     str(timedelta(seconds=time_per_epoch)),
                     str(timedelta(seconds=seconds_left))))
 
             if (epoch + 1) % self.run_config.validation_frequency == 0:
-                val_loss, val_acc, val_acc5 = self.validate(is_test=False, return_top5=True)
+                val_loss, val_acc, val_acc5 = self.validate(
+                    is_test=False, return_top5=True)
                 is_best = val_acc > self.best_acc
                 self.best_acc = max(self.best_acc, val_acc)
                 val_log = 'Valid [{0}/{1}]\tloss {2:.3f}\ttop-1 acc {3:.3f} ({4:.3f})'. \
-                    format(epoch + 1, self.run_config.n_epochs, val_loss, val_acc, self.best_acc)
+                    format(epoch + 1, self.run_config.n_epochs,
+                           val_loss, val_acc, self.best_acc)
                 if print_top5:
                     val_log += '\ttop-5 acc {0:.3f}\tTrain top-1 {top1.avg:.3f}\ttop-5 {top5.avg:.3f}'. \
                         format(val_acc5, top1=train_top1, top5=train_top5)
                 else:
-                    val_log += '\tTrain top-1 {top1.avg:.3f}'.format(top1=train_top1)
+                    val_log += '\tTrain top-1 {top1.avg:.3f}'.format(
+                        top1=train_top1)
                 if self.run_config.local_rank == 0:
                     self.write_log(val_log, 'valid')
             else:

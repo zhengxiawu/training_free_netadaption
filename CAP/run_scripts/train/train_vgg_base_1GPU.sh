@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-python3 train.py --train \
+python3 -m torch.distributed.launch --nproc_per_node=1 python3 train.py --train \
  --model "vgg" \
  --path "Exp_base/vgg_base_${RANDOM}" \
  --dataset "cifar10" \

@@ -14,11 +14,13 @@ cifar_cfg = {
     19: [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512],
 }
 
+
 class VGG_CIFAR(MyNetwork):
     def __init__(self, cfg=None, cutout=True, num_classes=10):
         super(VGG_CIFAR, self).__init__()
         if cfg is None:
-            cfg = [64, 64, 128, 128, 256, 256, 256, 512, 512, 512, 512, 512, 512]
+            cfg = [64, 64, 128, 128, 256, 256,
+                   256, 512, 512, 512, 512, 512, 512]
         self.cutout = cutout
         self.cfg = cfg
         _cfg = list(cfg)
@@ -36,7 +38,8 @@ class VGG_CIFAR(MyNetwork):
             nn.Linear(512, num_classes)
         )
         self.num_classes = num_classes
-        self.classifier_param = (self.cfg[-1] + 1) * 512 + (512 + 1) * num_classes
+        self.classifier_param = (
+            self.cfg[-1] + 1) * 512 + (512 + 1) * num_classes
 
     def make_layers(self, cfg, batch_norm=False):
         layers = []
@@ -45,17 +48,20 @@ class VGG_CIFAR(MyNetwork):
         conv_index = 0
         for v in cfg:
             if v == 'M':
-                layers += [('maxpool_%d' % pool_index, nn.MaxPool2d(kernel_size=2, stride=2))]
+                layers += [('maxpool_%d' % pool_index,
+                            nn.MaxPool2d(kernel_size=2, stride=2))]
                 pool_index += 1
             else:
-                conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1, bias=False)
+                conv2d = nn.Conv2d(
+                    in_channels, v, kernel_size=3, padding=1, bias=False)
                 conv_index += 1
                 if batch_norm:
                     bn = nn.BatchNorm2d(v)
                     layers += [('conv_%d' % conv_index, conv2d), ('bn_%d' % conv_index, bn),
                                ('relu_%d' % conv_index, nn.ReLU(inplace=True))]
                 else:
-                    layers += [('conv_%d' % conv_index, conv2d), ('relu_%d' % conv_index, nn.ReLU(inplace=True))]
+                    layers += [('conv_%d' % conv_index, conv2d),
+                               ('relu_%d' % conv_index, nn.ReLU(inplace=True))]
                 in_channels = v
         self.conv_num = conv_index
         return nn.Sequential(OrderedDict(layers))
@@ -99,7 +105,8 @@ class VGG_CIFAR(MyNetwork):
         total_flops += (2 * input_size * input_size * _cfg[-1] - 1) * input_size * input_size * 512  # fc
         total_flops += 4 * _cfg[-1] * input_size * input_size  # bn_1d
         total_flops += input_size * input_size * 512  # relu
-        total_flops += (2 * input_size * input_size * 512 - 1) * input_size * input_size * num_classes  # fc
+        total_flops += (2 * input_size * input_size * 512 - 1) * \
+            input_size * input_size * num_classes  # fc
         return total_flops
 
     def forward(self, x):

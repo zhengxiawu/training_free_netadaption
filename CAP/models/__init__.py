@@ -39,6 +39,7 @@ class TrainRunConfig(RunConfig):
             'save_path': self.save_path,
         }
 
+
 class SearchRunConfig(RunConfig):
     def __init__(self, n_epochs=150, init_lr=0.05, lr_schedule_type='cosine', lr_schedule_param=None,
                  dataset='imagenet', train_batch_size=256, test_batch_size=500,

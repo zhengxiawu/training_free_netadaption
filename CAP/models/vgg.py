@@ -1,11 +1,12 @@
 # https://github.com/pytorch/vision/blob/master/torchvision/models
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import OrderedDict
 import torch.utils.model_zoo as model_zoo
 
-from utils import *
-from models.base_models import *
+from utils import cutout_batch
+from models.base_models import MyNetwork
 
 cifar_cfg = {
     11: [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512],
@@ -102,7 +103,8 @@ class VGG_CIFAR(MyNetwork):
                 total_flops += 2 * input_size * input_size * c_in  # max pool
         input_size /= 2
         total_flops += 3 * input_size * input_size * _cfg[-1]  # avg pool
-        total_flops += (2 * input_size * input_size * _cfg[-1] - 1) * input_size * input_size * 512  # fc
+        total_flops += (2 * input_size * input_size *
+                        _cfg[-1] - 1) * input_size * input_size * 512  # fc
         total_flops += 4 * _cfg[-1] * input_size * input_size  # bn_1d
         total_flops += input_size * input_size * 512  # relu
         total_flops += (2 * input_size * input_size * 512 - 1) * \
@@ -119,6 +121,13 @@ class VGG_CIFAR(MyNetwork):
         y = self.classifier(x)
         return y
 
+    def feature_extract(self, x):
+        tensor = []
+        for _layer in self.feature:
+            x = _layer(x)
+            tensor.append(x)
+        return tensor
+
     @property
     def config(self):
         return {
@@ -127,3 +136,15 @@ class VGG_CIFAR(MyNetwork):
             'cfg_base': [64, 64, 128, 128, 256, 256, 256, 512, 512, 512, 512, 512, 512],
             'dataset': 'cifar10',
         }
+
+
+def test():
+    net = VGG_CIFAR()
+    tensor_input = torch.randn([2, 3, 32, 32])
+    feature = net.feature_extract(tensor_input)
+    return feature
+    pass
+
+
+if __name__ == "__main__":
+    test()

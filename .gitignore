@@ -1,5 +1,5 @@
 *.DS_Store
 *.pyc
 __pycache__/
-*/Exp_base/
-*/Exp_train/
+CAP/Exp_base/
+CAP/Exp_train

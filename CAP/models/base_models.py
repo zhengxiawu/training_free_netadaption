@@ -3,12 +3,16 @@ import torch
 import torch.nn as nn
 from utils import count_parameters
 
+
 class MyNetwork(nn.Module):
     def forward(self, x):
         raise NotImplementedError
 
+    def feature_extract(self, x):
+        raise NotImplementedError
+
     @property
-    def config(self): # should include name/cfg/cfg_base/dataset
+    def config(self):  # should include name/cfg/cfg_base/dataset
         raise NotImplementedError
 
     def cfg2params(self, cfg):

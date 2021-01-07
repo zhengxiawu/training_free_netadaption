@@ -125,7 +125,8 @@ class VGG_CIFAR(MyNetwork):
         tensor = []
         for _layer in self.feature:
             x = _layer(x)
-            tensor.append(x)
+            if type(_layer) is nn.ReLU:
+                tensor.append(x)
         return tensor
 
     @property
@@ -142,9 +143,10 @@ def test():
     net = VGG_CIFAR()
     tensor_input = torch.randn([2, 3, 32, 32])
     feature = net.feature_extract(tensor_input)
+    # import pdb; pdb.set_trace()
     return feature
     pass
 
 
-if __name__ == "__main__":
-    test()
+# if __name__ == "__main__":
+#     test()

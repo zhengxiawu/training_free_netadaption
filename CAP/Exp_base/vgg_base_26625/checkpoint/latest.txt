@@ -1,0 +1,1 @@
+Exp_base/vgg_base_26625/checkpoint/checkpoint.pth.tar
